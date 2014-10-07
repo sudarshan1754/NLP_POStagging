@@ -6,6 +6,7 @@
 
 import nltk
 import math
+import  time
 
 # hw3_train
 
@@ -85,6 +86,9 @@ if __name__ == "__main__":
             trainfile = raw_input('Enter the training file:')
             lmpath = raw_input('Enter the LM file name: ')
 
+            # Timer to get the execution time
+            start_time = time.time()
+
             # get the training results
             train = pos_training()
             token_results = train.tokenization(trainfile)
@@ -117,6 +121,8 @@ if __name__ == "__main__":
                 LM_file.write(str(word_tag) + "\t" + str((obs_results[word_tag])) + "\n")
 
             LM_file.close()
+
+            print "\n--- %s seconds ---\n" % (time.time() - start_time)
 
         elif int(option) == 3:
             print "-------------------------Good Bye-------------------------"
