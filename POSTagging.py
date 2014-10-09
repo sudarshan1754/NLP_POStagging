@@ -118,6 +118,7 @@ if __name__ == "__main__":
 
             # get the training results
             train = pos_training()
+            # order: tags dictionary, transition dictionary, word_tag dictionary, no of tags in the file
             token_results = train.tokenization(trainfile)
 
             # get the ml of tags
