@@ -53,7 +53,7 @@ class pos_training:
                         transition[tag1 + " " + tag2] += 1
                     else:
                         transition[tag1 + " " + tag2] = 1
-
+        # tags dictionary, transition dictionary, word_tag dictionary, no of tags in the file
         token_results = [pos, transition, word_tag, no_of_tags]
 
         return token_results
