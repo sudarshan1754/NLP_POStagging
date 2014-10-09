@@ -109,6 +109,8 @@ if __name__ == "__main__":
 
             # get the training file name from the user
             trainfile = raw_input('Enter the training file:')
+
+            # to get the lm file name from the user
             lmpath = raw_input('Enter the LM file name: ')
 
             # Timer to get the execution time
