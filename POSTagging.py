@@ -54,11 +54,6 @@ class pos_training:
                     else:
                         transition[tag1 + " " + tag2] = 1
 
-        # print len(pos)
-        # print len(transition)
-        # print len(word_tag)
-        # print no_of_tags
-
         token_results = [pos, transition, word_tag, no_of_tags]
 
         return token_results
