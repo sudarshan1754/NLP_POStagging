@@ -6,25 +6,25 @@
 
 import nltk
 import math
-import  time
-
-# hw3_train
+import time
 
 
 class pos_training:
-
     @staticmethod
     def tokenization(fpath):
 
         pos = {}
         no_of_tags = 0
-        word_tag ={}
+        word_tag = {}
         transition = {}
+
+        starttags = ["<s>/<s>"]  # Dummy start symbol
+        endtags = ["<e>/<e>"]  # Dummy end symbol
 
         file_content = open(fpath)
 
         for line in file_content.readlines():
-            tokens = nltk.WhitespaceTokenizer().tokenize(line)
+            tokens = starttags + nltk.WhitespaceTokenizer().tokenize(line) + endtags
 
             for index, token in enumerate(tokens):  # Create the dictionary
 
@@ -34,7 +34,7 @@ class pos_training:
                 # Add the <word tag: count> to dictionary
                 word = token.split("/")[0]
                 tag = token.split("/")[1]
-                if  word + " " + tag in word_tag:
+                if word + " " + tag in word_tag:
                     word_tag[word + " " + tag] += 1
                 else:
                     word_tag[word + " " + tag] = 1
@@ -57,19 +57,49 @@ class pos_training:
         # print len(pos)
         # print len(transition)
         # print len(word_tag)
+        # print no_of_tags
 
         token_results = [pos, transition, word_tag, no_of_tags]
 
         return token_results
 
+    # Function to calculate the Unigram probability of tags
     @staticmethod
-    def calculate_probability(bigrams, pos):
+    def Unigram_Probability(pos, No_of_tags):
 
-        bigram_prob = {}
-        for word, count in bigrams.items():
-            bigram_prob[word] = count / float(pos[word.split(" ")[1]])
+        # A dictionary to store the <unigram: probability>
+        pos_probability = {}
 
-        return bigram_prob
+        for word, count in pos.items():
+            # Use MLE Estimation
+            pos_probability[word] = (count / float(No_of_tags))
+
+        return pos_probability
+
+    # Function to calculate tag_tag probability
+    @staticmethod
+    def tagtag_probability(tagtag, pos, pos_prob):
+
+        # For transition probability we must use the Interpolation smoothing technique
+        alpha = 0.99
+        beta = 1 - alpha
+
+        tagtag_prob = {}
+        for word, count in tagtag.items():
+            tagtag_prob[word] = (alpha * (count / float(pos[word.split(" ")[1]]))) + (
+                beta * float(pos_prob[word.split(" ")[0]]))
+
+        return tagtag_prob
+
+    # Function to calculate word_tag probability
+    @staticmethod
+    def wordtag_probability(wordtag, pos):
+
+        wordtag_prob = {}
+        for word, count in wordtag.items():
+            wordtag_prob[word] = (count / float(pos[word.split(" ")[1]]))
+
+        return wordtag_prob
 
 
 if __name__ == "__main__":
@@ -93,32 +123,32 @@ if __name__ == "__main__":
             train = pos_training()
             token_results = train.tokenization(trainfile)
 
+            # get the ml of tags
+            pos_prob = train.Unigram_Probability(token_results[0], token_results[3])
+
             # to get the transition probabilities
-            tran_results = train.calculate_probability(token_results[1], token_results[0])
+            tran_results = train.tagtag_probability(token_results[1], token_results[0], pos_prob)
 
             # to get the and observation probabilities
-            obs_results = train.calculate_probability(token_results[2], token_results[0])
+            obs_results = train.wordtag_probability(token_results[2], token_results[0])
 
             # store the language model file
             LM_file = open(lmpath, "w")
 
-            # to store pos
+            # to store pos_prob
             LM_file.write("pos:\n")
-            pos = token_results[0]
-            for tag in pos:
-                LM_file.write(str(tag) + "\t" + str(pos[tag]) + "\n")
+            for tag in pos_prob:
+                LM_file.write(str(tag) + "\t" + str(math.log(pos_prob[tag], 2)) + "\n")
 
             # to store transition probs
             LM_file.write("transition:\n")
             for tag_tag in tran_results:
-                # LM_file.write(str(tag_tag) + "\t" + str(math.log(tran_results[tag_tag], 2)) + "\n")
-                LM_file.write(str(tag_tag) + "\t" + str((tran_results[tag_tag])) + "\n")
+                LM_file.write(str(tag_tag) + "\t" + str(math.log(tran_results[tag_tag], 2)) + "\n")
 
             # to store observation probs
             LM_file.write("observation:\n")
             for word_tag in obs_results:
-                # LM_file.write(str(word_tag) + "\t" + str(math.log(obs_results[word_tag], 2)) + "\n")
-                LM_file.write(str(word_tag) + "\t" + str((obs_results[word_tag])) + "\n")
+                LM_file.write(str(word_tag) + "\t" + str(math.log(obs_results[word_tag], 2)) + "\n")
 
             LM_file.close()
 
