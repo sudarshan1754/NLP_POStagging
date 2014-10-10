@@ -7,6 +7,8 @@
 import nltk
 import math
 import time
+import operator
+
 
 
 class pos_training:
@@ -97,6 +99,86 @@ class pos_training:
         return wordtag_prob
 
 
+class pos_testing:
+
+    @staticmethod
+    def read_lmfile(lmfile):
+
+        # To get pos, transition probability and observation probability
+        tagtag_probability = {}
+        wordtag_probability = {}
+        tags = {}
+
+        lm_content = open(lmfile)
+        for lNo, line in enumerate(lm_content.readlines()):
+            if line == "pos:\n":
+                posData = lNo
+            if line == "transition:\n":
+                transData = lNo
+            elif line == "observation:\n":
+                obsData = lNo
+
+        lm_content.close()
+
+        init_viterbi = {}
+
+        lm_content = open(lmfile)
+        for lNo, line in enumerate(lm_content.readlines()):
+            # read tags
+            if posData < lNo < transData:
+                tags[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n'))
+            # read tagtag
+            elif transData < lNo < obsData:
+                tagtag_probability[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n'))
+                # get the initial viterbi
+                if "<s>" == (line.split("\t")[0]).split(" ")[0]:
+                    init_viterbi[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n')) + tags[line.split("\t")[0].split(" ")[0]]
+            # read wordtag
+            elif lNo > obsData:
+                wordtag_probability[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n'))
+
+        lm_model = [tags, tagtag_probability, wordtag_probability, init_viterbi]
+        return lm_model
+
+    @staticmethod
+    def tag_testfile(testfile, tags, tran_prob, obs_prob, init_viterbi, testtagfile):
+
+        test_content = open(testfile)
+
+        LM_file = open(testtagfile, "w")
+
+        for lNo, line in enumerate(test_content.readlines()):
+            obs = nltk.WhitespaceTokenizer().tokenize(line)
+            resultant_tag = []
+            for ob in obs:
+                # get all seen tags
+                new_viterbi = {}
+                for iVit in init_viterbi:
+                    # for each tag of the test word
+                    vitval = []
+                    vitval_index = []
+                    for wordtag, prob in obs_prob.iteritems():
+                        if ob == wordtag.split(" ")[0]:
+                            # get seen tag
+                            tag = wordtag.split(" ")[1]
+                            if (iVit.split(" ")[1] + " " + tag) in tran_prob:
+                                tp = tran_prob[iVit.split(" ")[1] + " " + tag]
+                            else:
+                                tp = 0
+                            vitval.append(init_viterbi[iVit] + tp +
+                                          obs_prob[ob + " " + tag])
+                            vitval_index.append(iVit.split(" ")[1] + " " + tag)
+                    new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)
+                resultant_tag.append(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1])
+                init_viterbi = new_viterbi.copy()
+
+            for i in range(0, len(obs)):
+                LM_file.write(obs[i] + "/" + resultant_tag[i] + " ")
+            LM_file.write("\n")
+
+        LM_file.close()
+        test_content.close()
+
 if __name__ == "__main__":
 
     print "\n-------------------------Welcome-------------------------\n"
@@ -151,6 +233,22 @@ if __name__ == "__main__":
             LM_file.close()
 
             print "\n--- %s seconds ---\n" % (time.time() - start_time)
+
+        elif int(option) == 2:
+
+            # to get the lm file name from the user
+            lmfile = raw_input('Enter the LM file name: ')
+
+            # get the test file name from the user
+            testfile = raw_input('Enter the test file:')
+
+            # get the testtag file name from the user
+            testtagfile = raw_input('Enter the test tag file name:')
+
+            # tags, tagtag_probability, wordtag_probability, init_viterbi
+            lmData = pos_testing.read_lmfile(lmfile)
+
+            pos_testing.tag_testfile(testfile, lmData[0], lmData[1], lmData[2], lmData[3], testtagfile)
 
         elif int(option) == 3:
             print "-------------------------Good Bye-------------------------"
