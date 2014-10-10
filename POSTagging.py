@@ -10,7 +10,6 @@ import time
 import operator
 
 
-
 class pos_training:
     @staticmethod
     def tokenization(fpath):
@@ -100,7 +99,6 @@ class pos_training:
 
 
 class pos_testing:
-
     @staticmethod
     def read_lmfile(lmfile):
 
@@ -132,7 +130,8 @@ class pos_testing:
                 tagtag_probability[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n'))
                 # get the initial viterbi
                 if "<s>" == (line.split("\t")[0]).split(" ")[0]:
-                    init_viterbi[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n')) + tags[line.split("\t")[0].split(" ")[0]]
+                    init_viterbi[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n')) + tags[
+                        line.split("\t")[0].split(" ")[0]]
             # read wordtag
             elif lNo > obsData:
                 wordtag_probability[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n'))
@@ -178,6 +177,7 @@ class pos_testing:
 
         LM_file.close()
         test_content.close()
+
 
 if __name__ == "__main__":
 
