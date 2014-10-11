@@ -8,6 +8,7 @@ import nltk
 import math
 import time
 import operator
+from itertools import izip
 
 
 class pos_training:
@@ -119,6 +120,7 @@ class pos_testing:
         lm_content.close()
 
         init_viterbi = {}
+        seenWords = []
 
         lm_content = open(lmfile)
         for lNo, line in enumerate(lm_content.readlines()):
@@ -135,41 +137,68 @@ class pos_testing:
             # read wordtag
             elif lNo > obsData:
                 wordtag_probability[line.split("\t")[0]] = float(line.split("\t")[1].rstrip('\n'))
+                seenWords.append(line.split("\t")[0].split(" ")[0])
 
-        lm_model = [tags, tagtag_probability, wordtag_probability, init_viterbi]
+        lm_model = [tags, tagtag_probability, wordtag_probability, init_viterbi, set(seenWords)]
         return lm_model
 
     @staticmethod
-    def tag_testfile(testfile, tags, tran_prob, obs_prob, init_viterbi, testtagfile):
+    def tag_testfile(testfile, tags, tran_prob, obs_prob, init_viterbi, testtagfile, seenWords):
 
         test_content = open(testfile)
 
         LM_file = open(testtagfile, "w")
+
+        new_obs_dist = {}
+        p_w = 0.01
+        # assign uniform distribution for all unseen <word, tag_i>
+        for pos, prob in tags.iteritems():
+            new_obs_dist[pos] = (math.log((p_w * (1 / float(len(tags)))), 2) - prob)
 
         for lNo, line in enumerate(test_content.readlines()):
             obs = nltk.WhitespaceTokenizer().tokenize(line)
             resultant_tag = []
             for ob in obs:
                 # get all seen tags
-                new_viterbi = {}
-                for iVit in init_viterbi:
-                    # for each tag of the test word
-                    vitval = []
-                    vitval_index = []
-                    for wordtag, prob in obs_prob.iteritems():
-                        if ob == wordtag.split(" ")[0]:
-                            # get seen tag
-                            tag = wordtag.split(" ")[1]
-                            if (iVit.split(" ")[1] + " " + tag) in tran_prob:
-                                tp = tran_prob[iVit.split(" ")[1] + " " + tag]
+                if ob not in seenWords:
+                    new_viterbi = {}
+                    for iVit in init_viterbi:
+                        # for each tag of the test word
+                        vitval = []                 # For each cell
+                        vitval_index = []           # For each cell
+                        for wordtag, prob in new_obs_dist.iteritems():
+                            # tag = wordtag.split(" ")[1]
+                            if (iVit.split(" ")[1] + " " + wordtag) in tran_prob:
+                                tp = tran_prob[iVit.split(" ")[1] + " " + wordtag]
                             else:
                                 tp = 0
                             vitval.append(init_viterbi[iVit] + tp +
-                                          obs_prob[ob + " " + tag])
-                            vitval_index.append(iVit.split(" ")[1] + " " + tag)
-                    new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)
-                resultant_tag.append(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1])
-                init_viterbi = new_viterbi.copy()
+                                          new_obs_dist[wordtag])
+                            vitval_index.append(iVit.split(" ")[1] + " " + wordtag)
+                        new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
+                    resultant_tag.append(str(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1] + ">>")) # Get the maximum in the column
+                    init_viterbi = new_viterbi.copy()
+                else:
+                    new_viterbi = {}
+                    for iVit in init_viterbi:
+                        # for each tag of the test word
+                        vitval = []                 # For each cell
+                        vitval_index = []           # For each cell
+                        for wordtag, prob in obs_prob.iteritems():
+                            if ob == wordtag.split(" ")[0]:
+                                # get seen tag
+                                tag = wordtag.split(" ")[1]
+                                if (iVit.split(" ")[1] + " " + tag) in tran_prob:
+                                    tp = tran_prob[iVit.split(" ")[1] + " " + tag]
+                                else:
+                                    tp = 0
+                                vitval.append(init_viterbi[iVit] + tp +
+                                              obs_prob[ob + " " + tag])
+                                vitval_index.append(iVit.split(" ")[1] + " " + tag)
+
+                        new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
+                    resultant_tag.append(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1]) # Get the maximum in the column
+                    init_viterbi = new_viterbi.copy()
 
             for i in range(0, len(obs)):
                 LM_file.write(obs[i] + "/" + resultant_tag[i] + " ")
@@ -178,6 +207,42 @@ class pos_testing:
         LM_file.close()
         test_content.close()
 
+class pos_evaluation:
+
+    @staticmethod
+    def evaulate(taggedfile, reffile):
+
+        tagged_content = open(taggedfile)
+        reffile_content = open(reffile)
+
+        totaltokens = 0
+        totalKnowns = 0
+        totalUnknowns = 0
+        unknownCorrect = 0
+        knownCorrect = 0
+        delimiter = [">>"]
+
+        for taggedline, refline in izip(tagged_content, reffile_content):
+            taggedtoken = nltk.WhitespaceTokenizer().tokenize(taggedline)
+            reftoken = nltk.WhitespaceTokenizer().tokenize(refline)
+
+            totaltokens += len(taggedtoken) # get the total number of tokens
+
+            for index, token in enumerate(taggedtoken):
+                taggedtag = token.split("/")[1]
+                # if unknown tag
+                if ">>" in [delimit for delimit in delimiter if delimit in taggedtag]:
+                    taggedtag = taggedtag.rstrip(">>")
+                    totalUnknowns += 1
+                    if taggedtag == reftoken[index].split("/")[1]:
+                        unknownCorrect += 1
+                else:
+                    totalKnowns += 1
+                    if taggedtag == reftoken[index].split("/")[1]:
+                        knownCorrect += 1
+
+        print totaltokens, totalKnowns, knownCorrect, totalUnknowns, unknownCorrect
+
 
 if __name__ == "__main__":
 
@@ -185,7 +250,7 @@ if __name__ == "__main__":
 
     while True:
 
-        option = raw_input('1. Train the Model\n2. Test the Language Model on a file\n3. Exit\n\nEnter your choice:')
+        option = raw_input('1. Train the Model\n2. Test the Language Model on a file\n3. Evaluate\n4. Exit\n\nEnter your choice:')
 
         if int(option) == 1:
 
@@ -245,12 +310,26 @@ if __name__ == "__main__":
             # get the testtag file name from the user
             testtagfile = raw_input('Enter the test tag file name:')
 
-            # tags, tagtag_probability, wordtag_probability, init_viterbi
+            # tags, tagtag_probability, wordtag_probability, init_viterbi, seenWords
             lmData = pos_testing.read_lmfile(lmfile)
 
-            pos_testing.tag_testfile(testfile, lmData[0], lmData[1], lmData[2], lmData[3], testtagfile)
+            # Timer to get the execution time
+            teststart_time = time.time()
+
+            pos_testing.tag_testfile(testfile, lmData[0], lmData[1], lmData[2], lmData[3], testtagfile, lmData[4])
+
+            print "\n--- %s seconds ---\n" % (time.time() - teststart_time)
 
         elif int(option) == 3:
+            # to get the tagged file name from the user
+            taggedfile = raw_input('Enter the tagged file name: ')
+
+            # get the ref file name from the user
+            reffile = raw_input('Enter the ref test file name:')
+
+            pos_evaluation.evaulate(taggedfile, reffile)
+
+        elif int(option) == 4:
             print "-------------------------Good Bye-------------------------"
             break
 
