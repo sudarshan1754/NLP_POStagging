@@ -160,45 +160,61 @@ class pos_testing:
             resultant_tag = []
             for ob in obs:
                 # get all seen tags
-                if ob not in seenWords:
-                    new_viterbi = {}
-                    for iVit in init_viterbi:
-                        # for each tag of the test word
-                        vitval = []                 # For each cell
-                        vitval_index = []           # For each cell
-                        for wordtag, prob in new_obs_dist.iteritems():
-                            # tag = wordtag.split(" ")[1]
-                            if (iVit.split(" ")[1] + " " + wordtag) in tran_prob:
-                                tp = tran_prob[iVit.split(" ")[1] + " " + wordtag]
+                # if ob not in seenWords:
+                #     pass
+                    # new_viterbi = {}
+                    # for iVit in init_viterbi:
+                    #     # for each tag of the test word
+                    #     vitval = []                 # For each cell
+                    #     vitval_index = []           # For each cell
+                    #     for wordtag, prob in new_obs_dist.iteritems():
+                    #         # tag = wordtag.split(" ")[1]
+                    #         if (iVit.split(" ")[1] + " " + wordtag) in tran_prob:
+                    #             tp = tran_prob[iVit.split(" ")[1] + " " + wordtag]
+                    #         else:
+                    #             tp = 0
+                    #         vitval.append(init_viterbi[iVit] + tp +
+                    #                       new_obs_dist[wordtag])
+                    #         vitval_index.append(iVit.split(" ")[1] + " " + wordtag)
+                    #     new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
+                    # resultant_tag.append(str(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1] + ">>")) # Get the maximum in the column
+                    # init_viterbi = new_viterbi.copy()
+                # else:
+                    # new_viterbi = {}
+                    # for iVit in init_viterbi:
+                    #     # for each tag of the test word
+                    #     vitval = []                 # For each cell
+                    #     vitval_index = []           # For each cell
+                    #     for wordtag, prob in obs_prob.iteritems():
+                    #         if ob == wordtag.split(" ")[0]:
+                    #             # get seen tag
+                    #             tag = wordtag.split(" ")[1]
+                    #             if (iVit.split(" ")[1] + " " + tag) in tran_prob:
+                    #                 tp = tran_prob[iVit.split(" ")[1] + " " + tag]
+                    #             else:
+                    #                 tp = 0
+                    #             vitval.append(init_viterbi[iVit] + tp +
+                    #                               obs_prob[ob + " " + tag])
+                    #             vitval_index.append(iVit.split(" ")[1] + " " + tag)
+                new_viterbi = {}
+                for iVit in init_viterbi:
+                    # for each tag of the test word
+                    vitval = []                 # For each cell
+                    vitval_index = []           # For each cell
+                    for wordtag, prob in obs_prob.iteritems():
+                        if ob == wordtag.split(" ")[0]:
+                            # get seen tag
+                            tag = wordtag.split(" ")[1]
+                            if (iVit.split(" ")[1] + " " + tag) in tran_prob:
+                                tp = tran_prob[iVit.split(" ")[1] + " " + tag]
                             else:
                                 tp = 0
                             vitval.append(init_viterbi[iVit] + tp +
-                                          new_obs_dist[wordtag])
-                            vitval_index.append(iVit.split(" ")[1] + " " + wordtag)
-                        new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
-                    resultant_tag.append(str(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1] + ">>")) # Get the maximum in the column
-                    init_viterbi = new_viterbi.copy()
-                else:
-                    new_viterbi = {}
-                    for iVit in init_viterbi:
-                        # for each tag of the test word
-                        vitval = []                 # For each cell
-                        vitval_index = []           # For each cell
-                        for wordtag, prob in obs_prob.iteritems():
-                            if ob == wordtag.split(" ")[0]:
-                                # get seen tag
-                                tag = wordtag.split(" ")[1]
-                                if (iVit.split(" ")[1] + " " + tag) in tran_prob:
-                                    tp = tran_prob[iVit.split(" ")[1] + " " + tag]
-                                else:
-                                    tp = 0
-                                vitval.append(init_viterbi[iVit] + tp +
                                               obs_prob[ob + " " + tag])
-                                vitval_index.append(iVit.split(" ")[1] + " " + tag)
-
-                        new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
-                    resultant_tag.append(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1]) # Get the maximum in the column
-                    init_viterbi = new_viterbi.copy()
+                            vitval_index.append(iVit.split(" ")[1] + " " + tag)
+                    new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
+                resultant_tag.append(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1]) # Get the maximum in the column
+                init_viterbi = new_viterbi.copy()
 
             for i in range(0, len(obs)):
                 LM_file.write(obs[i] + "/" + resultant_tag[i] + " ")
