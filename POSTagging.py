@@ -1,6 +1,6 @@
 ###********************************************************************************###
   # __author__ = 'sid'                                                             #
-  # This program is written as part of the Natural Language Processing Home Work 2 #
+  # This program is written as part of the Natural Language Processing Home Work 3 #
   # @copyright: Sudarshan Sudarshan (Sid)                                          #
 ###********************************************************************************###
 
@@ -9,6 +9,7 @@ import math
 import time
 import operator
 from itertools import izip
+import re
 
 
 class pos_training:
@@ -83,8 +84,9 @@ class pos_training:
 
         tagtag_prob = {}
         for word, count in tagtag.items():
-            tagtag_prob[word] = (alpha * (count / float(pos[word.split(" ")[1]]))) + (
-                beta * float(pos_prob[word.split(" ")[0]]))
+            # tagtag_prob[word] = (alpha * (count / float(pos[word.split(" ")[1]]))) + (
+            #     beta * float(pos_prob[word.split(" ")[0]]))
+            tagtag_prob[word] = (count / float(pos[word.split(" ")[0]]))
 
         return tagtag_prob
 
@@ -153,68 +155,69 @@ class pos_testing:
         p_w = 0.01
         # assign uniform distribution for all unseen <word, tag_i>
         for pos, prob in tags.iteritems():
-            new_obs_dist[pos] = (math.log((p_w * (1 / float(len(tags)))), 2) - prob)
+            new_obs_dist[pos] = math.log(((p_w * (1/float(len(seenWords)))) / (2 ** prob)), 2)
+
+        vTags = ["VBP", "VBG", "VB", "VBN", "VBD"]   # ends with 'ed' or 'ing'
+        nTags = ["NNS"]                              # ends with 's' letter
+        ncTags = ["NNP", "NNS", "NN"]                # capital letter
+        cdTags = ["CD"]                              # numeric
 
         for lNo, line in enumerate(test_content.readlines()):
             obs = nltk.WhitespaceTokenizer().tokenize(line)
             resultant_tag = []
             for ob in obs:
                 # get all seen tags
-                # if ob not in seenWords:
-                #     pass
-                    # new_viterbi = {}
-                    # for iVit in init_viterbi:
-                    #     # for each tag of the test word
-                    #     vitval = []                 # For each cell
-                    #     vitval_index = []           # For each cell
-                    #     for wordtag, prob in new_obs_dist.iteritems():
-                    #         # tag = wordtag.split(" ")[1]
-                    #         if (iVit.split(" ")[1] + " " + wordtag) in tran_prob:
-                    #             tp = tran_prob[iVit.split(" ")[1] + " " + wordtag]
-                    #         else:
-                    #             tp = 0
-                    #         vitval.append(init_viterbi[iVit] + tp +
-                    #                       new_obs_dist[wordtag])
-                    #         vitval_index.append(iVit.split(" ")[1] + " " + wordtag)
-                    #     new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
-                    # resultant_tag.append(str(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1] + ">>")) # Get the maximum in the column
-                    # init_viterbi = new_viterbi.copy()
-                # else:
-                    # new_viterbi = {}
-                    # for iVit in init_viterbi:
-                    #     # for each tag of the test word
-                    #     vitval = []                 # For each cell
-                    #     vitval_index = []           # For each cell
-                    #     for wordtag, prob in obs_prob.iteritems():
-                    #         if ob == wordtag.split(" ")[0]:
-                    #             # get seen tag
-                    #             tag = wordtag.split(" ")[1]
-                    #             if (iVit.split(" ")[1] + " " + tag) in tran_prob:
-                    #                 tp = tran_prob[iVit.split(" ")[1] + " " + tag]
-                    #             else:
-                    #                 tp = 0
-                    #             vitval.append(init_viterbi[iVit] + tp +
-                    #                               obs_prob[ob + " " + tag])
-                    #             vitval_index.append(iVit.split(" ")[1] + " " + tag)
-                new_viterbi = {}
-                for iVit in init_viterbi:
-                    # for each tag of the test word
-                    vitval = []                 # For each cell
-                    vitval_index = []           # For each cell
-                    for wordtag, prob in obs_prob.iteritems():
-                        if ob == wordtag.split(" ")[0]:
-                            # get seen tag
-                            tag = wordtag.split(" ")[1]
-                            if (iVit.split(" ")[1] + " " + tag) in tran_prob:
-                                tp = tran_prob[iVit.split(" ")[1] + " " + tag]
+                if ob not in seenWords:
+                    new_viterbi = {}
+                    for iVit in init_viterbi:
+                        # for each tag of the test word
+                        vitval = []                 # For each cell
+                        vitval_index = []           # For each cell
+                        for wordtag, prob in new_obs_dist.iteritems():
+                            # tag = wordtag.split(" ")[1]
+                            if (iVit.split(" ")[1] + " " + wordtag) in tran_prob:
+                                tp = tran_prob[iVit.split(" ")[1] + " " + wordtag]
                             else:
-                                tp = 0
-                            vitval.append(init_viterbi[iVit] + tp +
-                                              obs_prob[ob + " " + tag])
-                            vitval_index.append(iVit.split(" ")[1] + " " + tag)
-                    new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
-                resultant_tag.append(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1]) # Get the maximum in the column
-                init_viterbi = new_viterbi.copy()
+                                tp = 0.01 * tags[wordtag]
+                            if re.search(r'[A-Z][a-z]+ed|[A-Z][a-z]+ing', ob) is not None and wordtag in vTags:
+                                vitval.append(init_viterbi[iVit] + tp +
+                                              (new_obs_dist[wordtag] / 3))
+                            elif re.search(r'[A-Z][a-z]+s', ob) is not None and wordtag in nTags:
+                                vitval.append(init_viterbi[iVit] + tp +
+                                              (new_obs_dist[wordtag] / 10))
+                            elif re.search(r'[A-Z][a-z]+', ob) is not None and wordtag in ncTags:
+                                vitval.append(init_viterbi[iVit] + tp +
+                                              (new_obs_dist[wordtag] / 3))
+                            elif re.search(r'\d', ob) is not None and wordtag in cdTags:
+                                vitval.append(init_viterbi[iVit] + tp +
+                                              (new_obs_dist[wordtag] / 10))
+                            else:
+                                vitval.append(init_viterbi[iVit] + tp +
+                                              new_obs_dist[wordtag])
+                            vitval_index.append(iVit.split(" ")[1] + " " + wordtag)
+                        new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
+                    resultant_tag.append(str(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1] + ">>")) # Get the maximum in the column
+                    init_viterbi = new_viterbi.copy()
+                else:
+                    new_viterbi = {}
+                    for iVit in init_viterbi:
+                        # for each tag of the test word
+                        vitval = []                 # For each cell
+                        vitval_index = []           # For each cell
+                        for wordtag, prob in obs_prob.iteritems():
+                            if ob == wordtag.split(" ")[0]:
+                                # get seen tag
+                                tag = wordtag.split(" ")[1]
+                                if (iVit.split(" ")[1] + " " + tag) in tran_prob:
+                                    tp = tran_prob[iVit.split(" ")[1] + " " + tag]
+                                else:
+                                    tp = 0.01 * tags[tag]
+                                vitval.append(init_viterbi[iVit] + tp +
+                                                  obs_prob[ob + " " + tag])
+                                vitval_index.append(iVit.split(" ")[1] + " " + tag)
+                        new_viterbi[vitval_index[vitval.index(max(vitval))]] = max(vitval)  # Get the maximum in the cell
+                    resultant_tag.append(max(new_viterbi.iteritems(), key=operator.itemgetter(1))[0].split(" ")[1]) # Get the maximum in the column
+                    init_viterbi = new_viterbi.copy()
 
             for i in range(0, len(obs)):
                 LM_file.write(obs[i] + "/" + resultant_tag[i] + " ")
@@ -257,7 +260,11 @@ class pos_evaluation:
                     if taggedtag == reftoken[index].split("/")[1]:
                         knownCorrect += 1
 
-        print totaltokens, totalKnowns, knownCorrect, totalUnknowns, unknownCorrect
+        print "\n----------Results----------"
+        print "Overall Accuracy: " + str((knownCorrect + unknownCorrect) / float(totaltokens))
+        print "Known Accuracy: " + str(knownCorrect / float(totalKnowns))
+        print "Unknown Accuracy: " + str(unknownCorrect / float(totalUnknowns))
+        print "\n"
 
 
 if __name__ == "__main__":
@@ -287,12 +294,16 @@ if __name__ == "__main__":
             # get the ml of tags
             pos_prob = train.Unigram_Probability(token_results[0], token_results[3])
 
+            print "\nFinished Calculating priors of tags........"
             # to get the transition probabilities
             tran_results = train.tagtag_probability(token_results[1], token_results[0], pos_prob)
 
+            print "\nFinished Calculating transition probability........"
             # to get the and observation probabilities
             obs_results = train.wordtag_probability(token_results[2], token_results[0])
 
+            print "\nFinished Calculating observation probability........"
+            print "\nWriting Results to Language Model file........"
             # store the language model file
             LM_file = open(lmpath, "w")
 
@@ -329,8 +340,11 @@ if __name__ == "__main__":
             # tags, tagtag_probability, wordtag_probability, init_viterbi, seenWords
             lmData = pos_testing.read_lmfile(lmfile)
 
+            print "\nFinished Reading Model file........"
             # Timer to get the execution time
             teststart_time = time.time()
+
+            print "\nTesting........"
 
             pos_testing.tag_testfile(testfile, lmData[0], lmData[1], lmData[2], lmData[3], testtagfile, lmData[4])
 
