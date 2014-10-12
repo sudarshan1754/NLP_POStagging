@@ -1,0 +1,49 @@
+###********************************************************************************###
+  # __author__ = 'sid'                                                             #
+  # This README is written as part of the Natural Language Processing Home Work 3  #
+  # @copyright: Sudarshan Sudarshan (Sid)                                          #
+###********************************************************************************###
+
+I have made use of Python 2.7.3 programming/scripting environment.
+Note: It is better to use an IDE such as Pycharm to run the program. You can download the
+      free(community edition) version of the IDE from this link:
+      http://www.jetbrains.com/pycharm/download/
+
+Before running the program, please install the Natural Language Toolkit from this link:
+http://www.nltk.org/install.html
+
+"POSTagging.py" file is the executable file which contains the program for this assignment.
+
+Execution:
+    In the terminal type: python POSTagging.py
+
+       This will list the options to:
+       1. Train the Model
+       2. Test the Language Model on a file
+       3. Evaluate
+       4. Exit
+
+    For training, enter "1", this will ask you for the training filename (please make
+    sure your file is in the same folder as the POSTagging.py). Next it will ask you for the
+    name of the language model file. Once this is entered, the training begins. And
+    the progress will be displayed along with the training time, once completed.
+
+    For testing, enter "2", this will ask you for the language model filename (please
+    make sure your file is in the same folder as the POSTagging.py). Next it will ask you
+    for the test file name (please make sure your file is in the same folder as the
+    POSTagging.py). Then it will ask you for the test tag file name (output). Once this
+    is provided, the testing begins.
+
+    Note: Testing a large file will take anywhere between 15~25 minutes.
+
+    For evaluation, enter "3", this will ask you for the tagged file name, i.e, the output
+    file of testing phase (please make sure your file is in the same folder as the
+    POSTagging.py). Next it will ask you for the reference file name. The evaluation
+    results will be displayed in the terminal.
+
+    To exit the program enter "4".
+
+Notes:
+    1. To identify the unknown tags for evaluation, I have appended ">>" to the tag in
+    the testing phase. Example: "CD>>"
+###********************************************************************************###
